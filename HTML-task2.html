@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Trek</title>
+        <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: rgba(244, 244, 244, 0.8); /* Apply slight transparent blur effect */
+        }
+
+        header {
+            text-align: center;
+            background-color: #007bff;
+            color: #fff;
+            padding: 20px 0;
+        }
+
+        h1 {
+            margin: 0;
+        }
+
+        .theme-toggle {
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .content {
+            min-height: calc(100vh - 190px); /* Adjust according to header and footer height */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .stopwatch-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 800px;
+            transition: background-color 0.3s ease-in-out; /* Add transition for background color change */
+        }
+
+        .stopwatch-section,
+        .countdown-section,
+        .export {
+            margin-bottom: 20px;
+        }
+
+        .stopwatch-section h2,
+        .countdown-section h2 {
+            text-align: center;
+        }
+
+        .stopwatch,
+        .countdown {
+            text-align: center;
+        }
+
+        .controls button,
+        .countdown button,
+        .export button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: #fff;
+            transition: background-color 0.3s ease-in-out;
+        }
+
+        .controls button:hover,
+        .countdown button:hover,
+        .export button:hover {
+            background-color: #0056b3;
+        }
+
+        #laps div {
+            background: #e9ecef;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            color: #000; /* Ensure lap times are always visible */
+        }
+
+        .dark-mode .stopwatch-container {
+            background-color: #333; /* Change background color in dark mode */
+            color: #fff; /* Change text color in dark mode */
+        }
+
+        footer {
+            text-align: center;
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px 0;
+        }
+
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Welcome to Time Trek</h1>
+        <p>This is a simple stopwatch application to keep track of time</p>
+
+        <div class="theme-toggle">
+            <label for="themeSelect">Theme:</label>
+            <select id="themeSelect">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+            </select>
+        </div>
+    </header>
+    <div class="content">
+        <div class="stopwatch-container">
+            <section class="stopwatch-section">
+                <h2>Stopwatch</h2>
+                <div class="stopwatch">
+                    <div id="display">00:00:00</div>
+                    <div class="controls">
+                        <button id="startStopBtn">Start</button>
+                        <button id="resetBtn">Reset</button>
+                        <button id="lapBtn">Lap</button>
+                    </div>
+                    <div id="laps"></div>
+                </div>
+            </section>
+            <section class="countdown-section">
+                <h2>Countdown Timer</h2>
+                <div class="countdown">
+                    <input type="number" id="countdownMinutesInput" placeholder="Minutes">
+                    <input type="number" id="countdownSecondsInput" placeholder="Seconds">
+                    <button id="setCountdownBtn">Set Countdown</button>
+                    <button id="pauseCountdownBtn">Pause</button>
+                    <button id="resetCountdownBtn">Reset Countdown</button>
+                    <div id="countdownDisplay">00:00</div>
+                </div>
+            </section>
+            <div class="export">
+                <button id="exportLapsBtn">Export Laps</button>
+                <button id="importLapsBtn">Import Laps</button>
+                <input type="file" id="fileInput" style="display:none;">
+            </div>
+        </div>
+    </div>
+    <footer>
+        <p>Designed and developed by Punya</p>
+<p>For queries:</p>
+<p>Contact: <a href="mailto:punyagowda585@gmail.com">punyagowda585@gmail.com</a></p>
+<p>&copy; 2024 Time Trek. All rights reserved.</p>
+
+    </footer>
+
+    <script>
+        let startTime = 0;
+let updatedTime = 0;
+let difference = 0;
+let tInterval;
+let running = false;
+let lapCounter = 0;
+let countdownTime = 0;
+let countdownRemaining = 0;
+let countdownRunning = false;
+let countdownInterval;
+
+const display = document.getElementById('display');
+const startStopBtn = document.getElementById('startStopBtn');
+const resetBtn = document.getElementById('resetBtn');
+const lapBtn = document.getElementById('lapBtn');
+const lapsContainer = document.getElementById('laps');
+const countdownMinutesInput = document.getElementById('countdownMinutesInput');
+const countdownSecondsInput = document.getElementById('countdownSecondsInput');
+const setCountdownBtn = document.getElementById('setCountdownBtn');
+const pauseCountdownBtn = document.getElementById('pauseCountdownBtn');
+const resetCountdownBtn = document.getElementById('resetCountdownBtn');
+const countdownDisplay = document.getElementById('countdownDisplay');
+const exportLapsBtn = document.getElementById('exportLapsBtn');
+const importLapsBtn = document.getElementById('importLapsBtn');
+const fileInput = document.getElementById('fileInput');
+const themeSelect = document.getElementById('themeSelect');
+
+startStopBtn.addEventListener('click', startStop);
+resetBtn.addEventListener('click', reset);
+lapBtn.addEventListener('click', addLap);
+setCountdownBtn.addEventListener('click', setCountdown);
+pauseCountdownBtn.addEventListener('click', pauseCountdown);
+resetCountdownBtn.addEventListener('click', resetCountdown);
+exportLapsBtn.addEventListener('click', exportLaps);
+importLapsBtn.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', importLaps);
+themeSelect.addEventListener('change', changeTheme);
+
+// Add event listeners for sound select dropdowns
+const startSoundSelect = document.getElementById('startSoundSelect');
+const pauseSoundSelect = document.getElementById('pauseSoundSelect');
+const lapSoundSelect = document.getElementById('lapSoundSelect');
+
+// Add event listeners to play selected sound alerts
+startStopBtn.addEventListener('click', () => playSound(startSoundSelect.value));
+pauseCountdownBtn.addEventListener('click', () => playSound(pauseSoundSelect.value));
+lapBtn.addEventListener('click', () => playSound(lapSoundSelect.value));
+
+function startStop() {
+    if (!running) {
+        startTime = new Date().getTime() - difference;
+        tInterval = setInterval(updateTime, 1);
+        startStopBtn.innerHTML = "Pause";
+        playSound('start');
+        running = true;
+    } else {
+        clearInterval(tInterval);
+        difference = new Date().getTime() - startTime;
+        startStopBtn.innerHTML = "Start";
+        playSound('pause');
+        running = false;
+    }
+}
+
+function reset() {
+    clearInterval(tInterval);
+    running = false;
+    difference = 0;
+    startTime = 0;
+    updatedTime = 0;
+    display.innerHTML = "00:00:00";
+    startStopBtn.innerHTML = "Start";
+    lapsContainer.innerHTML = "";
+    lapCounter = 0;
+    playSound('reset');
+}
+
+function addLap() {
+    if (running) {
+        const lapTime = document.createElement('div');
+        lapCounter++;
+        lapTime.innerHTML = `Lap ${lapCounter}: ${formatTime(updatedTime)}`;
+        lapsContainer.appendChild(lapTime);
+        playSound('lap');
+    }
+}
+
+function updateTime() {
+    updatedTime = new Date().getTime() - startTime;
+    display.innerHTML = formatTime(updatedTime);
+}
+
+function formatTime(time) {
+    const hours = Math.floor((time % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((time % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((time % (1000 * 60)) / 1000);
+    const milliseconds = Math.floor((time % 1000) / 10);
+
+    return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}.${pad(milliseconds)}`;
+}
+
+function pad(number) {
+    return number < 10 ? `0${number}` : number;
+}
+
+function setCountdown() {
+    clearInterval(countdownInterval);
+    const minutes = parseInt(countdownMinutesInput.value) || 0;
+    const seconds = parseInt(countdownSecondsInput.value) || 0;
+    countdownTime = (minutes * 60 + seconds) * 1000;
+    countdownRemaining = countdownTime;
+    countdownDisplay.innerHTML = formatCountdown(countdownRemaining);
+    countdownInterval = setInterval(updateCountdown, 1000);
+    countdownRunning = true;
+}
+
+function updateCountdown() {
+    if (countdownRemaining <= 0) {
+        clearInterval(countdownInterval);
+        countdownDisplay.innerHTML = "Time's up!";
+        playSound('alert');
+        countdownRunning = false;
+    } else {
+        countdownRemaining -= 1000;
+        countdownDisplay.innerHTML = formatCountdown(countdownRemaining);
+    }
+}
+
+function pauseCountdown() {
+    if (countdownRunning) {
+        clearInterval(countdownInterval);
+        pauseCountdownBtn.innerHTML = "Resume";
+        countdownRunning = false;
+    } else {
+        countdownInterval = setInterval(updateCountdown, 1000);
+        pauseCountdownBtn.innerHTML = "Pause";
+        countdownRunning = true;
+    }
+}
+
+function resetCountdown() {
+    clearInterval(countdownInterval);
+    countdownRemaining = 0;
+    countdownDisplay.innerHTML = "00:00";
+    pauseCountdownBtn.innerHTML = "Pause";
+    countdownRunning = false;
+}
+
+function formatCountdown(time) {
+    const minutes = Math.floor(time / 60000);
+    const seconds = Math.floor((time % 60000) / 1000);
+    return `${pad(minutes)}:${pad(seconds)}`;
+}
+
+function exportLaps() {
+    const laps = [];
+    lapsContainer.querySelectorAll('div').forEach(div => {
+        laps.push(div.textContent);
+    });
+    const blob = new Blob([laps.join('\n')], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'laps.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+function importLaps(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const lines = e.target.result.split('\n');
+            lapsContainer.innerHTML = '';
+            lines.forEach(line => {
+                const lapTime = document.createElement('div');
+                lapTime.textContent = line;
+                lapsContainer.appendChild(lapTime);
+            });
+        };
+        reader.readAsText(file);
+    }
+}
+
+// Share lap time via sharing dialog
+function shareLapTime(lapTimeString) {
+    if (navigator.share) {
+        navigator.share({
+            title: 'Check out my lap time!',
+            text: `I completed a lap in ${lapTimeString}!`,
+        })
+        .then(() => console.log('Shared successfully'))
+        .catch((error) => console.error('Error sharing:', error));
+    } else {
+        // Fallback if sharing API is not supported
+        alert(`Share lap time: ${lapTimeString}`);
+    }
+}
+
+function playSound(type) {
+    const audio = new Audio();
+    switch (type) {
+        case 'start':
+            audio.src = 'start.mp3';
+            break;
+        case 'pause':
+            audio.src = 'pause.mp3';
+            break;
+        case 'reset':
+            audio.src = 'reset.mp3';
+            break;
+        case 'lap':
+            audio.src = 'lap.mp3';
+            break;
+        case 'alert':
+            audio.src = 'alert.mp3';
+            break;
+    }
+    audio.play();
+}
+
+function changeTheme() {
+    const isDarkMode = themeSelect.value === 'dark';
+    document.body.classList.toggle('dark-mode', isDarkMode);
+    const elements = document.querySelectorAll('#display, #countdownDisplay');
+    elements.forEach(el => {
+        el.style.color = isDarkMode ? '#fff' : '#000';
+    });
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (event) => {
+    if (event.key === 's' || event.key === 'S') {
+        startStop();
+    } else if (event.key === 'r' || event.key === 'R') {
+        reset();
+    } else if (event.key === 'l' || event.key === 'L') {
+        addLap();
+    }
+});
+    </script>
+</body>
+</html>
